@@ -138,20 +138,12 @@ static void on_connection(mqtt_client_t *client, void *arg,
         mqtt_publish(client, "stm32/status", msg, strlen(msg),
                      0, /*retain=*/1, on_sub_done, NULL);
 
-        /* Publish reason for the previous reset — once per boot.
-         * After the first publish, the marker is cleared (handled by caller). */
+        /* Publish reset reason as a plain string (no snprintf — runs on
+         * tcpip_thread which has only 1 KB of stack). */
         const fault_info_t *fi = fault_marker_get();
-        static char diag[96];
-        const char *task = fi->task_name ? fi->task_name : "-";
-        int n = snprintf(diag, sizeof(diag),
-                         "{\"reset\":\"%s\",\"task\":\"%s\",\"tick\":%lu}",
-                         fault_marker_reason_str(fi->reason),
-                         task,
-                         (unsigned long)fi->tick_at_fault);
-        if (n > 0 && n < (int)sizeof(diag)) {
-            mqtt_publish(client, "stm32/diag", diag, (u16_t)n,
-                         0, /*retain=*/1, on_sub_done, NULL);
-        }
+        const char *reason = fault_marker_reason_str(fi->reason);
+        mqtt_publish(client, "stm32/diag", reason, strlen(reason),
+                     0, /*retain=*/1, on_sub_done, NULL);
     } else {
         set_connected(0);
     }

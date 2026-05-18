@@ -72,7 +72,8 @@
 /*----- Value in opt.h for LWIP_NETIF_LINK_CALLBACK: 0 -----*/
 #define LWIP_NETIF_LINK_CALLBACK 1
 /*----- Value in opt.h for TCPIP_THREAD_STACKSIZE: 0 -----*/
-#define TCPIP_THREAD_STACKSIZE 1024
+/* 1024 was too small once MQTT callbacks were added — bump to 2048. */
+#define TCPIP_THREAD_STACKSIZE 2048
 /*----- Value in opt.h for TCPIP_THREAD_PRIO: 1 -----*/
 #define TCPIP_THREAD_PRIO 24
 /*----- Value in opt.h for TCPIP_MBOX_SIZE: 0 -----*/
@@ -118,9 +119,9 @@
 /*-----------------------------------------------------------------------------*/
 /* USER CODE BEGIN 1 */
 #define LWIP_MQTT                    1
-#define MQTT_OUTPUT_RINGBUF_SIZE     512
+#define MQTT_OUTPUT_RINGBUF_SIZE     1024
 #define MQTT_VAR_HEADER_BUFFER_LEN   256
-#define MQTT_REQ_MAX_IN_FLIGHT       4
+#define MQTT_REQ_MAX_IN_FLIGHT       8   /* 4 subscribe + 2 publish in on_connection */
 #define MQTT_CONNECT_TIMOUT          100
 /* USER CODE END 1 */
 

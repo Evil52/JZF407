@@ -26,7 +26,7 @@
 #define IWDG_KEY_WRITE_EN  ((uint32_t)0x00005555u)
 
 #define IWDG_PRESCALER_256 ((uint32_t)0x06u)  /* PR[2:0] = 110 */
-#define IWDG_RELOAD_VALUE  ((uint32_t)1000u)  /* ~8 sec at /256 */
+#define IWDG_RELOAD_VALUE  ((uint32_t)2500u)  /* ~20 sec at /256 — covers slow PHY init */
 
 void watchdog_start(void)
 {

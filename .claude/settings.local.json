@@ -15,7 +15,14 @@
       "PowerShell(& \"C:\\\\Program Files\\\\mosquitto\\\\mosquitto_sub.exe\" -h 192.168.137.1 -t \"stm32/#\" -v -W 6 2>&1)",
       "PowerShell(ping 192.168.137.2 -n 2)",
       "PowerShell(& \"C:\\\\Program Files\\\\mosquitto\\\\mosquitto_pub.exe\" -h 192.168.137.1 -t stm32/status -n -r)",
-      "PowerShell(winget search \"MQTT Explorer\" 2>&1)"
+      "PowerShell(winget search \"MQTT Explorer\" 2>&1)",
+      "PowerShell(& \"C:\\\\Program Files\\\\mosquitto\\\\mosquitto_sub.exe\" -h 192.168.137.1 -t \"stm32/status\" -t \"stm32/diag\" -v -W 4 2>&1)",
+      "PowerShell(& \"C:\\\\Program Files\\\\mosquitto\\\\mosquitto_sub.exe\" -h 192.168.137.1 -t \"stm32/#\" -v -W 20 2>&1)",
+      "PowerShell(& \"C:\\\\Program Files\\\\mosquitto\\\\mosquitto_pub.exe\" -h 192.168.137.1 -t stm32/led/all -m 1)",
+      "PowerShell(& \"C:\\\\Program Files\\\\mosquitto\\\\mosquitto_pub.exe\" -h 192.168.137.1 -t stm32/led/all -m 0)",
+      "PowerShell(& \"C:\\\\Program Files\\\\mosquitto\\\\mosquitto_pub.exe\" -h 192.168.137.1 -t stm32/led/1 -m 1)",
+      "PowerShell(& \"C:\\\\Program Files\\\\mosquitto\\\\mosquitto_pub.exe\" -h 192.168.137.1 -t stm32/led/2 -m 1)",
+      "PowerShell(& \"C:\\\\Program Files\\\\mosquitto\\\\mosquitto_sub.exe\" -h 192.168.137.1 -t \"stm32/status\" -t \"stm32/diag\" -v -W 5 2>&1)"
     ]
   }
 }

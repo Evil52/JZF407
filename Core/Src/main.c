@@ -56,13 +56,13 @@ const osThreadAttr_t defaultTask_attributes = {
 osThreadId_t mqttTaskHandle;
 const osThreadAttr_t mqttTask_attributes = {
   .name = "mqttTask",
-  .stack_size = 512 * 4,
+  .stack_size = 1024 * 4,  /* 4 KB — snprintf and lwIP callbacks need headroom */
   .priority = (osPriority_t) osPriorityBelowNormal,
 };
 osThreadId_t wdgTaskHandle;
 const osThreadAttr_t wdgTask_attributes = {
   .name = "wdgTask",
-  .stack_size = 128 * 4,
+  .stack_size = 256 * 4,
   .priority = (osPriority_t) osPriorityLow,
 };
 /* USER CODE END PV */
@@ -261,9 +261,13 @@ static void MX_GPIO_Init(void)
 /* USER CODE END Header_StartDefaultTask */
 void StartDefaultTask(void *argument)
 {
+  /* Refresh watchdog before long PHY init — lower-priority wdgTask may not
+   * get CPU while MX_LWIP_Init() blocks on HAL_Delay inside DP83848_Init. */
+  watchdog_refresh();
   /* init code for LWIP */
   MX_LWIP_Init();
   /* USER CODE BEGIN 5 */
+  watchdog_refresh();
   net_ready_signal();   /* gnetif is now initialised — release waiters */
   /* Infinite loop */
   for(;;)

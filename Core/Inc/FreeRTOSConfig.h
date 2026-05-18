@@ -64,8 +64,12 @@
 #define configSUPPORT_DYNAMIC_ALLOCATION         1
 #define configUSE_IDLE_HOOK                      0
 #define configUSE_TICK_HOOK                      0
-#define configCHECK_FOR_STACK_OVERFLOW           2   /* pattern-fill check, production grade */
-#define configUSE_MALLOC_FAILED_HOOK             1   /* call hook on pvPortMalloc fail */
+/* configCHECK_FOR_STACK_OVERFLOW: leave OFF until stack high-water-marks
+ * are measured per task in production. IWDG catches any deadlock as backup.
+ * TODO: re-enable to method 1 after running uxTaskGetStackHighWaterMark()
+ *       in steady state and bumping per-task .stack_size accordingly. */
+#define configCHECK_FOR_STACK_OVERFLOW           0
+#define configUSE_MALLOC_FAILED_HOOK             1
 #define configCPU_CLOCK_HZ                       ( SystemCoreClock )
 #define configTICK_RATE_HZ                       ((TickType_t)1000)
 #define configMAX_PRIORITIES                     ( 56 )

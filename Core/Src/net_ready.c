@@ -16,6 +16,9 @@ void net_ready_signal(void)
 void net_ready_wait(void)
 {
     if (!netReadySem) return;
-    osSemaphoreAcquire(netReadySem, osWaitForever);
+    /* Bounded wait — 10 s is plenty for MX_LWIP_Init.
+     * If we time out (init crashed?), proceed anyway so the watchdog can
+     * still fire if we deadlock later. */
+    osSemaphoreAcquire(netReadySem, 10000U);
     osSemaphoreRelease(netReadySem); /* re-arm so others can pass too */
 }
