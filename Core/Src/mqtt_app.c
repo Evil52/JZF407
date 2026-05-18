@@ -86,6 +86,9 @@ static void led_all(uint8_t on)
     led_set(LED3_PIN, on);
 }
 
+/* Forward decl */
+static void on_sub_done(void *arg, err_t err);
+
 /* ── incoming publish (called from tcpip thread) ─────── */
 static char s_topic_buf[64];
 
@@ -100,8 +103,18 @@ static void on_data(void *arg, const u8_t *data, u16_t len, u8_t flags)
 {
     (void)arg; (void)flags;
     if (len == 0) return;
-    uint8_t on = (data[0] == '1');
 
+    /* Echo: any payload received on stm32/ping is re-published verbatim
+     * to stm32/pong. Used by load-test script to measure RTT. */
+    if (strcmp(s_topic_buf, "stm32/ping") == 0) {
+        if (s_client) {
+            mqtt_publish(s_client, "stm32/pong", data, len,
+                         0, 0, on_sub_done, NULL);
+        }
+        return;
+    }
+
+    uint8_t on = (data[0] == '1');
     if      (strcmp(s_topic_buf, "stm32/led/all") == 0) led_all(on);
     else if (strcmp(s_topic_buf, "stm32/led/1")   == 0) led_set(LED1_PIN, on);
     else if (strcmp(s_topic_buf, "stm32/led/2")   == 0) led_set(LED2_PIN, on);
@@ -131,6 +144,7 @@ static void on_connection(mqtt_client_t *client, void *arg,
         mqtt_subscribe(client, "stm32/led/2",   0, on_sub_done, NULL);
         mqtt_subscribe(client, "stm32/led/3",   0, on_sub_done, NULL);
         mqtt_subscribe(client, "stm32/led/all", 0, on_sub_done, NULL);
+        mqtt_subscribe(client, "stm32/ping",    0, on_sub_done, NULL);  /* load-test echo */
 
         /* Publish online status — retained so dashboards see it on (re)subscribe.
          * Combined with LWT "offline", this gives reliable presence tracking. */
