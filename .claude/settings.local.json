@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(New-NetFirewallRule -DisplayName \"Mosquitto MQTT 1883\" -Direction Inbound -Protocol TCP -LocalPort 1883 -Action Allow -ErrorAction SilentlyContinue)",
+      "PowerShell(Get-Service -Name mosquitto -ErrorAction SilentlyContinue)",
+      "PowerShell(Get-Process -Name mosquitto -ErrorAction SilentlyContinue)",
+      "PowerShell(netsh interface show interface)",
+      "PowerShell(arp -a -N 192.168.137.1)",
+      "PowerShell(Stop-Service SharedAccess -Force -ErrorAction SilentlyContinue)",
+      "PowerShell(Start-Service SharedAccess)",
+      "PowerShell(Get-Service SharedAccess)",
+      "PowerShell(netsh interface ip show address \"Ethernet\")",
+      "PowerShell(ping 192.168.137.2 -n 4)",
+      "PowerShell(& \"C:\\\\Program Files\\\\mosquitto\\\\mosquitto_sub.exe\" -h 192.168.137.1 -t \"stm32/#\" -v -C 5 --timeout 5 2>&1)",
+      "PowerShell(& \"C:\\\\Program Files\\\\mosquitto\\\\mosquitto_sub.exe\" -h 192.168.137.1 -t \"stm32/#\" -v -W 6 2>&1)",
+      "PowerShell(ping 192.168.137.2 -n 2)",
+      "PowerShell(& \"C:\\\\Program Files\\\\mosquitto\\\\mosquitto_pub.exe\" -h 192.168.137.1 -t stm32/status -n -r)",
+      "PowerShell(winget search \"MQTT Explorer\" 2>&1)"
+    ]
+  }
+}

@@ -1,0 +1,33 @@
+# Build output
+build/
+Debug/
+Release/
+out/
+cmake-build-*/
+
+# Generated files
+*.elf
+*.bin
+*.hex
+*.map
+*.list
+*.o
+*.obj
+*.d
+*.su
+*.cyclo
+
+# IDE
+.vscode/
+.idea/
+.cproject
+.project
+.settings/
+
+# CubeMX backup
+*.ioc.bak
+*~
+
+# OS
+Thumbs.db
+.DS_Store
