@@ -1,6 +1,6 @@
-# jzf407 — STM32F407 MQTT Ethernet Controller
+JZSTM32F407 MQTT Ethernet Controller
 
-Production-ready embedded firmware для STM32F407VETx с управлением через MQTT по Ethernet.
+Embedded firmware для STM32F407VETx с управлением через MQTT по Ethernet.
 
 **Текущая функциональность:** дистанционное управление тремя LED через MQTT-команды. Лёгко расширяется на любые GPIO (см. таблицу пинов ниже).
 
