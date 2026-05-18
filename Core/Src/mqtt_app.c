@@ -26,7 +26,9 @@
 #include "lwip/ip_addr.h"
 #include "cmsis_os.h"
 #include "net_ready.h"
+#include "fault_marker.h"
 #include <string.h>
+#include <stdio.h>
 
 /* ── user config ─────────────────────────────────────── */
 #define MQTT_BROKER_IP    "192.168.137.1"
@@ -130,10 +132,26 @@ static void on_connection(mqtt_client_t *client, void *arg,
         mqtt_subscribe(client, "stm32/led/3",   0, on_sub_done, NULL);
         mqtt_subscribe(client, "stm32/led/all", 0, on_sub_done, NULL);
 
-        /* Publish online status (after subscribe to ensure clean order) */
+        /* Publish online status — retained so dashboards see it on (re)subscribe.
+         * Combined with LWT "offline", this gives reliable presence tracking. */
         const char *msg = "online";
         mqtt_publish(client, "stm32/status", msg, strlen(msg),
-                     0, 0, on_sub_done, NULL);
+                     0, /*retain=*/1, on_sub_done, NULL);
+
+        /* Publish reason for the previous reset — once per boot.
+         * After the first publish, the marker is cleared (handled by caller). */
+        const fault_info_t *fi = fault_marker_get();
+        static char diag[96];
+        const char *task = fi->task_name ? fi->task_name : "-";
+        int n = snprintf(diag, sizeof(diag),
+                         "{\"reset\":\"%s\",\"task\":\"%s\",\"tick\":%lu}",
+                         fault_marker_reason_str(fi->reason),
+                         task,
+                         (unsigned long)fi->tick_at_fault);
+        if (n > 0 && n < (int)sizeof(diag)) {
+            mqtt_publish(client, "stm32/diag", diag, (u16_t)n,
+                         0, /*retain=*/1, on_sub_done, NULL);
+        }
     } else {
         set_connected(0);
     }
@@ -157,7 +175,12 @@ static void do_connect(void *arg)
     memset(&s_ci, 0, sizeof(s_ci));
     s_ci.client_id   = MQTT_CLIENT_ID;
     s_ci.keep_alive  = 60;
-    /* no LWT for now — keep it simple */
+    /* Last Will: broker publishes "offline" if we vanish without DISCONNECT.
+     * Retained so any new subscriber sees the current state immediately. */
+    s_ci.will_topic  = "stm32/status";
+    s_ci.will_msg    = "offline";
+    s_ci.will_qos    = 0;
+    s_ci.will_retain = 1;
 
     err_t r = mqtt_client_connect(s_client, &broker, MQTT_BROKER_PORT,
                                   on_connection, NULL, &s_ci);

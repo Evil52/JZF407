@@ -25,6 +25,8 @@
 /* USER CODE BEGIN Includes */
 #include "mqtt_app.h"
 #include "net_ready.h"
+#include "watchdog.h"
+#include "fault_marker.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -57,6 +59,12 @@ const osThreadAttr_t mqttTask_attributes = {
   .stack_size = 512 * 4,
   .priority = (osPriority_t) osPriorityBelowNormal,
 };
+osThreadId_t wdgTaskHandle;
+const osThreadAttr_t wdgTask_attributes = {
+  .name = "wdgTask",
+  .stack_size = 128 * 4,
+  .priority = (osPriority_t) osPriorityLow,
+};
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -81,7 +89,8 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
-
+  /* Capture reset reason BEFORE anything else can touch RCC->CSR */
+  fault_marker_capture();
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -90,7 +99,7 @@ int main(void)
   HAL_Init();
 
   /* USER CODE BEGIN Init */
-
+  watchdog_start();   /* ~8s timeout; once started — only reset stops it */
   /* USER CODE END Init */
 
   /* Configure the system clock */
@@ -131,6 +140,7 @@ int main(void)
 
   /* USER CODE BEGIN RTOS_THREADS */
   mqttTaskHandle = osThreadNew(mqtt_app_task, NULL, &mqttTask_attributes);
+  wdgTaskHandle  = osThreadNew(watchdog_task, NULL, &wdgTask_attributes);
   /* USER CODE END RTOS_THREADS */
 
   /* USER CODE BEGIN RTOS_EVENTS */

@@ -47,6 +47,8 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     Core/Src/mqtt_app.c
     Core/Src/net_ready.c
     Core/Src/rtos_hooks.c
+    Core/Src/watchdog.c
+    Core/Src/fault_marker.c
 )
 
 # Add include paths
