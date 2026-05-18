@@ -16,7 +16,11 @@
 #include "fault_marker.h"
 #include "stm32f4xx.h"
 
-#define MARKER_ADDR        ((volatile uint32_t *)0x1000FFF0u)
+/* Test override: tests redirect MARKER_ADDR to a fake buffer */
+#ifndef FAULT_MARKER_ADDR
+#define FAULT_MARKER_ADDR  0x1000FFF0u
+#endif
+#define MARKER_ADDR        ((volatile uint32_t *)(uintptr_t)FAULT_MARKER_ADDR)
 #define MAGIC_STACK        0xDEAD1111u
 #define MAGIC_MALLOC       0xDEAD2222u
 #define MAGIC_SENTINEL     0xA5A5A5A5u
@@ -80,6 +84,17 @@ const fault_info_t *fault_marker_get(void)
 {
     return &s_info;
 }
+
+#ifdef TEST_BUILD
+/* Reset captured state — only for host-side unit tests */
+void fault_marker_test_reset(void)
+{
+    s_captured       = 0;
+    s_info.reason    = RESET_REASON_NONE;
+    s_info.task_name = (const char *)0;
+    s_info.tick_at_fault = 0;
+}
+#endif
 
 const char *fault_marker_reason_str(reset_reason_t r)
 {

@@ -27,6 +27,7 @@
 #include "cmsis_os.h"
 #include "net_ready.h"
 #include "fault_marker.h"
+#include "led_dispatch.h"
 #include <string.h>
 #include <stdio.h>
 
@@ -102,11 +103,10 @@ static void on_publish(void *arg, const char *topic, u32_t tot_len)
 static void on_data(void *arg, const u8_t *data, u16_t len, u8_t flags)
 {
     (void)arg; (void)flags;
-    if (len == 0) return;
 
-    /* Echo: any payload received on stm32/ping is re-published verbatim
-     * to stm32/pong. Used by load-test script to measure RTT. */
-    if (strcmp(s_topic_buf, "stm32/ping") == 0) {
+    led_dispatch_t d = led_dispatch_parse(s_topic_buf, data, len);
+
+    if (d.echo) {
         if (s_client) {
             mqtt_publish(s_client, "stm32/pong", data, len,
                          0, 0, on_sub_done, NULL);
@@ -114,11 +114,9 @@ static void on_data(void *arg, const u8_t *data, u16_t len, u8_t flags)
         return;
     }
 
-    uint8_t on = (data[0] == '1');
-    if      (strcmp(s_topic_buf, "stm32/led/all") == 0) led_all(on);
-    else if (strcmp(s_topic_buf, "stm32/led/1")   == 0) led_set(LED1_PIN, on);
-    else if (strcmp(s_topic_buf, "stm32/led/2")   == 0) led_set(LED2_PIN, on);
-    else if (strcmp(s_topic_buf, "stm32/led/3")   == 0) led_set(LED3_PIN, on);
+    if (d.mask & 0x01) led_set(LED1_PIN, d.state);
+    if (d.mask & 0x02) led_set(LED2_PIN, d.state);
+    if (d.mask & 0x04) led_set(LED3_PIN, d.state);
 }
 
 static void on_sub_done(void *arg, err_t err)
