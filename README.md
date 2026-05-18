@@ -1,4 +1,4 @@
-# jtf407 — STM32F407 MQTT Ethernet Controller
+# jzf407 — STM32F407 MQTT Ethernet Controller
 
 Production-ready embedded firmware для STM32F407VETx с управлением через MQTT по Ethernet.
 
@@ -257,7 +257,6 @@ dhcp_start(&gnetif);
 
 Для работы соответствующей шины нужно инициализировать USART2 (PD5/PD6/PD7) или CAN1 (PD0/PD1) в прошивке.
 
-> **Замечание:** на твоей конкретной плате расположение пинов клеммы может отличаться (производители делают ревизии). Проверь по шильдику над клеммой или мультиметром (continuity к разводке MAX3485 / TJA1050).
 
 #### Красные элементы (DIP-switch / jumpers)
 
@@ -267,7 +266,7 @@ dhcp_start(&gnetif);
 - **Перемычка J5** на USB +5V — выбор питания (USB vs внешнее)
 - **Терминаторы R24, R26 (120Ω)** для CAN1/CAN2 — переключаются jumper'ами J3, J4 (если плата на конце CAN-шины)
 
-DIP-switch'ей в схеме не нашёл — то, что выглядит как красные блочки на фото, это, скорее всего, jumper-перемычки `J3`, `J4`, `J5`, `P8` или подобные.
+
 
 #### Питание
 
@@ -618,12 +617,4 @@ jtf407/
 
 ---
 
-## Лицензия
 
-Сторонние компоненты:
-- STM32 HAL — STMicroelectronics, Ultimate Liberty License
-- FreeRTOS — MIT License
-- LwIP — modified BSD License
-- Unity — MIT License
-
-Пользовательский код (`Core/Src/mqtt_app.c`, `net_ready.c`, `watchdog.c`, `fault_marker.c`, `led_dispatch.c`, `rtos_hooks.c`, тесты) — внутреннее использование.
