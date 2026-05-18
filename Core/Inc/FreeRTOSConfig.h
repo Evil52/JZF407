@@ -64,6 +64,8 @@
 #define configSUPPORT_DYNAMIC_ALLOCATION         1
 #define configUSE_IDLE_HOOK                      0
 #define configUSE_TICK_HOOK                      0
+#define configCHECK_FOR_STACK_OVERFLOW           2   /* pattern-fill check, production grade */
+#define configUSE_MALLOC_FAILED_HOOK             1   /* call hook on pvPortMalloc fail */
 #define configCPU_CLOCK_HZ                       ( SystemCoreClock )
 #define configTICK_RATE_HZ                       ((TickType_t)1000)
 #define configMAX_PRIORITIES                     ( 56 )

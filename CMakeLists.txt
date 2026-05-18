@@ -45,6 +45,8 @@ target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE
 # Add sources to executable
 target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     Core/Src/mqtt_app.c
+    Core/Src/net_ready.c
+    Core/Src/rtos_hooks.c
 )
 
 # Add include paths

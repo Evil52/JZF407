@@ -42,8 +42,11 @@
 /* Time to block waiting for transmissions to finish */
 #define ETHIF_TX_TIMEOUT (2000U)
 /* USER CODE BEGIN OS_THREAD_STACK_SIZE_WITH_RTOS */
-/* Stack size of the interface thread */
-#define INTERFACE_THREAD_STACK_SIZE ( 350 )
+/* Stack size of the interface thread.
+ * 350 bytes is dangerously small: tcpip_input -> ethernet_input -> ip4_input ->
+ * tcp_input -> mqtt callbacks -> user code (led_set + HAL_GPIO). 768 leaves a
+ * safety margin for deep TCP packet processing chains. */
+#define INTERFACE_THREAD_STACK_SIZE ( 768 )
 /* USER CODE END OS_THREAD_STACK_SIZE_WITH_RTOS */
 /* Network interface name */
 #define IFNAME0 's'
@@ -113,6 +116,20 @@ osSemaphoreId TxPktSemaphore = NULL;   /* Semaphore to signal transmit packet co
 /* Global Ethernet handle */
 ETH_HandleTypeDef heth;
 ETH_TxPacketConfig TxConfig;
+
+/* Mutex protecting heth from concurrent access: low_level_output runs on
+ * tcpip_thread, while ethernet_link_thread may call HAL_ETH_Stop_IT /
+ * SetMACConfig / Start_IT — a race on shared DMA descriptors otherwise. */
+static osMutexId_t heth_mutex = NULL;
+
+static void heth_lock(void)
+{
+    if (heth_mutex) osMutexAcquire(heth_mutex, osWaitForever);
+}
+static void heth_unlock(void)
+{
+    if (heth_mutex) osMutexRelease(heth_mutex);
+}
 
 /* Private function prototypes -----------------------------------------------*/
 int32_t ETH_PHY_IO_Init(void);
@@ -191,15 +208,15 @@ static void low_level_init(struct netif *netif)
   ETH_MACConfigTypeDef MACConf = {0};
   /* Start ETH HAL Init */
 
-   uint8_t MACAddr[6] ;
+  /* MAC must outlive low_level_init: heth.Init.MACAddr stores this pointer */
+  static uint8_t MACAddr[6] = { 0x00, 0x80, 0xE1, 0x00, 0x00, 0x00 };
   heth.Instance = ETH;
-  MACAddr[0] = 0x00;
-  MACAddr[1] = 0x80;
-  MACAddr[2] = 0xE1;
-  MACAddr[3] = 0x00;
-  MACAddr[4] = 0x00;
-  MACAddr[5] = 0x00;
   heth.Init.MACAddr = &MACAddr[0];
+
+  /* Create heth access mutex (idempotent — only created once) */
+  if (!heth_mutex) {
+    heth_mutex = osMutexNew(NULL);
+  }
   heth.Init.MediaInterface = HAL_ETH_RMII_MODE;
   heth.Init.TxDesc = DMATxDscrTab;
   heth.Init.RxDesc = DMARxDscrTab;
@@ -388,6 +405,7 @@ static err_t low_level_output(struct netif *netif, struct pbuf *p)
 
   pbuf_ref(p);
 
+  heth_lock();
   do
   {
     if(HAL_ETH_Transmit_IT(&heth, &TxConfig) == HAL_OK)
@@ -399,10 +417,19 @@ static err_t low_level_output(struct netif *netif, struct pbuf *p)
 
       if(HAL_ETH_GetError(&heth) & HAL_ETH_ERROR_BUSY)
       {
-        /* Wait for descriptors to become available */
-        osSemaphoreAcquire(TxPktSemaphore, ETHIF_TX_TIMEOUT);
-        HAL_ETH_ReleaseTxPacket(&heth);
-        errval = ERR_BUF;
+        /* Wait for descriptors to become available. If the wait fails
+         * (timeout, semaphore deleted) we abort to avoid an infinite loop
+         * and releasing TX descriptors that were never actually freed. */
+        if (osSemaphoreAcquire(TxPktSemaphore, ETHIF_TX_TIMEOUT) != osOK)
+        {
+          pbuf_free(p);
+          errval = ERR_IF;
+        }
+        else
+        {
+          HAL_ETH_ReleaseTxPacket(&heth);
+          errval = ERR_BUF;
+        }
       }
       else
       {
@@ -412,6 +439,7 @@ static err_t low_level_output(struct netif *netif, struct pbuf *p)
       }
     }
   }while(errval == ERR_BUF);
+  heth_unlock();
 
   return errval;
 }
@@ -774,7 +802,9 @@ void ethernet_link_thread(void* argument)
 
   if(netif_is_link_up(netif) && (PHYLinkState <= DP83848_STATUS_LINK_DOWN))
   {
+    heth_lock();
     HAL_ETH_Stop_IT(&heth);
+    heth_unlock();
     netif_set_down(netif);
     netif_set_link_down(netif);
   }
@@ -808,12 +838,14 @@ void ethernet_link_thread(void* argument)
 
     if(linkchanged)
     {
+      heth_lock();
       /* Get MAC Config MAC */
       HAL_ETH_GetMACConfig(&heth, &MACConf);
       MACConf.DuplexMode = duplex;
       MACConf.Speed = speed;
       HAL_ETH_SetMACConfig(&heth, &MACConf);
       HAL_ETH_Start_IT(&heth);
+      heth_unlock();
       netif_set_up(netif);
       netif_set_link_up(netif);
     }
