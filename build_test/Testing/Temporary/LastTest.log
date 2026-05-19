@@ -1,10 +1,10 @@
-Start testing: May 19 10:56 RTZ 4 (çèìà)
+Start testing: May 19 11:18 RTZ 4 (çèìà)
 ----------------------------------------------------------
 1/2 Testing: test_fault_marker
 1/2 Test: test_fault_marker
 Command: "C:/ST/STM32CubeCLT_1.21.0/jtf407/build_test/test_fault_marker.exe"
 Directory: C:/ST/STM32CubeCLT_1.21.0/jtf407/build_test
-"test_fault_marker" start time: May 19 10:56 RTZ 4 (çèìà)
+"test_fault_marker" start time: May 19 11:18 RTZ 4 (çèìà)
 Output:
 ----------------------------------------------------------
 C:\ST\STM32CubeCLT_1.21.0\jtf407\test\test_fault_marker.c:171:test_rcc_power_on:PASS
@@ -27,10 +27,10 @@ C:\ST\STM32CubeCLT_1.21.0\jtf407\test\test_fault_marker.c:185:test_reason_str_un
 15 Tests 0 Failures 0 Ignored 
 OK
 <end of output>
-Test time =   0.16 sec
+Test time =   0.01 sec
 ----------------------------------------------------------
 Test Passed.
-"test_fault_marker" end time: May 19 10:56 RTZ 4 (çèìà)
+"test_fault_marker" end time: May 19 11:18 RTZ 4 (çèìà)
 "test_fault_marker" time elapsed: 00:00:00
 ----------------------------------------------------------
 
@@ -38,35 +38,41 @@ Test Passed.
 2/2 Test: test_led_dispatch
 Command: "C:/ST/STM32CubeCLT_1.21.0/jtf407/build_test/test_led_dispatch.exe"
 Directory: C:/ST/STM32CubeCLT_1.21.0/jtf407/build_test
-"test_led_dispatch" start time: May 19 10:56 RTZ 4 (çèìà)
+"test_led_dispatch" start time: May 19 11:18 RTZ 4 (çèìà)
 Output:
 ----------------------------------------------------------
-C:\ST\STM32CubeCLT_1.21.0\jtf407\test\test_led_dispatch.c:133:test_led1_on:PASS
-C:\ST\STM32CubeCLT_1.21.0\jtf407\test\test_led_dispatch.c:134:test_led2_off:PASS
-C:\ST\STM32CubeCLT_1.21.0\jtf407\test\test_led_dispatch.c:135:test_led3_on:PASS
-C:\ST\STM32CubeCLT_1.21.0\jtf407\test\test_led_dispatch.c:136:test_led_all_on:PASS
-C:\ST\STM32CubeCLT_1.21.0\jtf407\test\test_led_dispatch.c:137:test_led_all_off:PASS
-C:\ST\STM32CubeCLT_1.21.0\jtf407\test\test_led_dispatch.c:138:test_payload_other_chars_treated_as_off:PASS
-C:\ST\STM32CubeCLT_1.21.0\jtf407\test\test_led_dispatch.c:139:test_multi_byte_payload_uses_first_byte:PASS
-C:\ST\STM32CubeCLT_1.21.0\jtf407\test\test_led_dispatch.c:140:test_empty_payload_is_noop_for_led:PASS
-C:\ST\STM32CubeCLT_1.21.0\jtf407\test\test_led_dispatch.c:141:test_null_payload_is_noop:PASS
-C:\ST\STM32CubeCLT_1.21.0\jtf407\test\test_led_dispatch.c:142:test_ping_sets_echo_flag:PASS
-C:\ST\STM32CubeCLT_1.21.0\jtf407\test\test_led_dispatch.c:143:test_ping_with_empty_payload_still_echoes:PASS
-C:\ST\STM32CubeCLT_1.21.0\jtf407\test\test_led_dispatch.c:144:test_unknown_topic_is_noop:PASS
-C:\ST\STM32CubeCLT_1.21.0\jtf407\test\test_led_dispatch.c:145:test_partial_topic_match_is_noop:PASS
-C:\ST\STM32CubeCLT_1.21.0\jtf407\test\test_led_dispatch.c:146:test_led_topic_with_trailing_chars:PASS
-C:\ST\STM32CubeCLT_1.21.0\jtf407\test\test_led_dispatch.c:147:test_null_topic_is_noop:PASS
-C:\ST\STM32CubeCLT_1.21.0\jtf407\test\test_led_dispatch.c:148:test_empty_topic_is_noop:PASS
+C:\ST\STM32CubeCLT_1.21.0\jtf407\test\test_led_dispatch.c:180:test_led1_on:PASS
+C:\ST\STM32CubeCLT_1.21.0\jtf407\test\test_led_dispatch.c:181:test_led2_off:PASS
+C:\ST\STM32CubeCLT_1.21.0\jtf407\test\test_led_dispatch.c:182:test_led3_on:PASS
+C:\ST\STM32CubeCLT_1.21.0\jtf407\test\test_led_dispatch.c:183:test_led_all_on:PASS
+C:\ST\STM32CubeCLT_1.21.0\jtf407\test\test_led_dispatch.c:184:test_led_all_off:PASS
+C:\ST\STM32CubeCLT_1.21.0\jtf407\test\test_led_dispatch.c:186:test_payload_other_chars_treated_as_off:PASS
+C:\ST\STM32CubeCLT_1.21.0\jtf407\test\test_led_dispatch.c:187:test_multi_byte_payload_uses_first_byte:PASS
+C:\ST\STM32CubeCLT_1.21.0\jtf407\test\test_led_dispatch.c:188:test_empty_payload_is_noop_for_led:PASS
+C:\ST\STM32CubeCLT_1.21.0\jtf407\test\test_led_dispatch.c:189:test_null_payload_is_noop:PASS
+C:\ST\STM32CubeCLT_1.21.0\jtf407\test\test_led_dispatch.c:191:test_ping_sets_echo_flag:PASS
+C:\ST\STM32CubeCLT_1.21.0\jtf407\test\test_led_dispatch.c:192:test_ping_with_empty_payload_still_echoes:PASS
+C:\ST\STM32CubeCLT_1.21.0\jtf407\test\test_led_dispatch.c:194:test_unknown_topic_is_noop:PASS
+C:\ST\STM32CubeCLT_1.21.0\jtf407\test\test_led_dispatch.c:195:test_partial_topic_match_is_noop:PASS
+C:\ST\STM32CubeCLT_1.21.0\jtf407\test\test_led_dispatch.c:196:test_led_topic_with_trailing_chars:PASS
+C:\ST\STM32CubeCLT_1.21.0\jtf407\test\test_led_dispatch.c:197:test_null_topic_is_noop:PASS
+C:\ST\STM32CubeCLT_1.21.0\jtf407\test\test_led_dispatch.c:198:test_empty_topic_is_noop:PASS
+C:\ST\STM32CubeCLT_1.21.0\jtf407\test\test_led_dispatch.c:200:test_relay1_on:PASS
+C:\ST\STM32CubeCLT_1.21.0\jtf407\test\test_led_dispatch.c:201:test_relay2_off:PASS
+C:\ST\STM32CubeCLT_1.21.0\jtf407\test\test_led_dispatch.c:202:test_relay3_on:PASS
+C:\ST\STM32CubeCLT_1.21.0\jtf407\test\test_led_dispatch.c:203:test_relay_all_on:PASS
+C:\ST\STM32CubeCLT_1.21.0\jtf407\test\test_led_dispatch.c:204:test_relay_all_off:PASS
+C:\ST\STM32CubeCLT_1.21.0\jtf407\test\test_led_dispatch.c:205:test_relay_and_led_masks_dont_overlap:PASS
 
 -----------------------
-16 Tests 0 Failures 0 Ignored 
+22 Tests 0 Failures 0 Ignored 
 OK
 <end of output>
-Test time =   0.01 sec
+Test time =   0.30 sec
 ----------------------------------------------------------
 Test Passed.
-"test_led_dispatch" end time: May 19 10:56 RTZ 4 (çèìà)
+"test_led_dispatch" end time: May 19 11:18 RTZ 4 (çèìà)
 "test_led_dispatch" time elapsed: 00:00:00
 ----------------------------------------------------------
 
-End testing: May 19 10:56 RTZ 4 (çèìà)
+End testing: May 19 11:18 RTZ 4 (çèìà)

@@ -165,12 +165,17 @@ static void on_connection(mqtt_client_t *client, void *arg,
         /* Install publish handlers BEFORE subscribing */
         mqtt_set_inpub_callback(client, on_publish, on_data, NULL);
 
-        /* Subscribe with QoS=0 */
-        mqtt_subscribe(client, "stm32/led/1",   0, on_sub_done, NULL);
-        mqtt_subscribe(client, "stm32/led/2",   0, on_sub_done, NULL);
-        mqtt_subscribe(client, "stm32/led/3",   0, on_sub_done, NULL);
-        mqtt_subscribe(client, "stm32/led/all", 0, on_sub_done, NULL);
-        mqtt_subscribe(client, "stm32/ping",    0, on_sub_done, NULL);  /* load-test echo */
+        /* Subscribe with QoS=0. Total in-flight = 9 subs + 2 publish = 11.
+         * MQTT_REQ_MAX_IN_FLIGHT in lwipopts.h must be >= 11. */
+        mqtt_subscribe(client, "stm32/led/1",     0, on_sub_done, NULL);
+        mqtt_subscribe(client, "stm32/led/2",     0, on_sub_done, NULL);
+        mqtt_subscribe(client, "stm32/led/3",     0, on_sub_done, NULL);
+        mqtt_subscribe(client, "stm32/led/all",   0, on_sub_done, NULL);
+        mqtt_subscribe(client, "stm32/relay/1",   0, on_sub_done, NULL);
+        mqtt_subscribe(client, "stm32/relay/2",   0, on_sub_done, NULL);
+        mqtt_subscribe(client, "stm32/relay/3",   0, on_sub_done, NULL);
+        mqtt_subscribe(client, "stm32/relay/all", 0, on_sub_done, NULL);
+        mqtt_subscribe(client, "stm32/ping",      0, on_sub_done, NULL);  /* load-test echo */
 
         /* Publish online status — retained so dashboards see it on (re)subscribe.
          * Combined with LWT "offline", this gives reliable presence tracking. */

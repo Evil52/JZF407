@@ -121,7 +121,7 @@
 #define LWIP_MQTT                    1
 #define MQTT_OUTPUT_RINGBUF_SIZE     1024
 #define MQTT_VAR_HEADER_BUFFER_LEN   256
-#define MQTT_REQ_MAX_IN_FLIGHT       8   /* 4 subscribe + 2 publish in on_connection */
+#define MQTT_REQ_MAX_IN_FLIGHT       12  /* 9 subscribe + 2 publish in on_connection */
 #define MQTT_CONNECT_TIMOUT          100
 /* USER CODE END 1 */
 
