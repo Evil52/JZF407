@@ -29,6 +29,7 @@
 #include "fault_marker.h"
 #include "outputs.h"
 #include "state_store.h"
+#include "buttons.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -119,6 +120,7 @@ int main(void)
    * state within milliseconds of reset, not seconds. */
   state_store_init();
   outputs_restore_from_nvm();
+  buttons_init();
   /* USER CODE END 2 */
 
   /* Init scheduler */

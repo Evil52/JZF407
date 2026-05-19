@@ -39,3 +39,6 @@ add_jtf407_test(test_fault_marker test_fault_marker.c ../Core/Src/fault_marker.c
 
 # led_dispatch is pure C, no hardware deps
 add_jtf407_test(test_led_dispatch test_led_dispatch.c ../Core/Src/led_dispatch.c)
+
+# debouncer is pure C, no hardware deps
+add_jtf407_test(test_debouncer test_debouncer.c ../Core/Src/debouncer.c)

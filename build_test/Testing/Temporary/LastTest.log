@@ -1,10 +1,10 @@
-Start testing: May 19 15:45 RTZ 4 (çèìà)
+Start testing: May 19 15:59 RTZ 4 (çèìà)
 ----------------------------------------------------------
-1/2 Testing: test_fault_marker
-1/2 Test: test_fault_marker
+1/3 Testing: test_fault_marker
+1/3 Test: test_fault_marker
 Command: "C:/ST/STM32CubeCLT_1.21.0/jtf407/build_test/test_fault_marker.exe"
 Directory: C:/ST/STM32CubeCLT_1.21.0/jtf407/build_test
-"test_fault_marker" start time: May 19 15:45 RTZ 4 (çèìà)
+"test_fault_marker" start time: May 19 15:59 RTZ 4 (çèìà)
 Output:
 ----------------------------------------------------------
 C:\ST\STM32CubeCLT_1.21.0\jtf407\test\test_fault_marker.c:171:test_rcc_power_on:PASS
@@ -27,18 +27,18 @@ C:\ST\STM32CubeCLT_1.21.0\jtf407\test\test_fault_marker.c:185:test_reason_str_un
 15 Tests 0 Failures 0 Ignored 
 OK
 <end of output>
-Test time =   0.02 sec
+Test time =   0.01 sec
 ----------------------------------------------------------
 Test Passed.
-"test_fault_marker" end time: May 19 15:45 RTZ 4 (çèìà)
+"test_fault_marker" end time: May 19 15:59 RTZ 4 (çèìà)
 "test_fault_marker" time elapsed: 00:00:00
 ----------------------------------------------------------
 
-2/2 Testing: test_led_dispatch
-2/2 Test: test_led_dispatch
+2/3 Testing: test_led_dispatch
+2/3 Test: test_led_dispatch
 Command: "C:/ST/STM32CubeCLT_1.21.0/jtf407/build_test/test_led_dispatch.exe"
 Directory: C:/ST/STM32CubeCLT_1.21.0/jtf407/build_test
-"test_led_dispatch" start time: May 19 15:45 RTZ 4 (çèìà)
+"test_led_dispatch" start time: May 19 15:59 RTZ 4 (çèìà)
 Output:
 ----------------------------------------------------------
 C:\ST\STM32CubeCLT_1.21.0\jtf407\test\test_led_dispatch.c:140:test_led1_on:PASS
@@ -63,11 +63,41 @@ C:\ST\STM32CubeCLT_1.21.0\jtf407\test\test_led_dispatch.c:156:test_masks_dont_ov
 17 Tests 0 Failures 0 Ignored 
 OK
 <end of output>
-Test time =   0.12 sec
+Test time =   0.01 sec
 ----------------------------------------------------------
 Test Passed.
-"test_led_dispatch" end time: May 19 15:45 RTZ 4 (çèìà)
+"test_led_dispatch" end time: May 19 15:59 RTZ 4 (çèìà)
 "test_led_dispatch" time elapsed: 00:00:00
 ----------------------------------------------------------
 
-End testing: May 19 15:45 RTZ 4 (çèìà)
+3/3 Testing: test_debouncer
+3/3 Test: test_debouncer
+Command: "C:/ST/STM32CubeCLT_1.21.0/jtf407/build_test/test_debouncer.exe"
+Directory: C:/ST/STM32CubeCLT_1.21.0/jtf407/build_test
+"test_debouncer" start time: May 19 15:59 RTZ 4 (çèìà)
+Output:
+----------------------------------------------------------
+C:\ST\STM32CubeCLT_1.21.0\jtf407\test\test_debouncer.c:129:test_initial_state_is_released:PASS
+C:\ST\STM32CubeCLT_1.21.0\jtf407\test\test_debouncer.c:130:test_press_after_4_low_samples:PASS
+C:\ST\STM32CubeCLT_1.21.0\jtf407\test\test_debouncer.c:131:test_press_edge_consumed_once:PASS
+C:\ST\STM32CubeCLT_1.21.0\jtf407\test\test_debouncer.c:132:test_holding_button_doesnt_repeat_press:PASS
+C:\ST\STM32CubeCLT_1.21.0\jtf407\test\test_debouncer.c:133:test_release_after_4_high_samples:PASS
+C:\ST\STM32CubeCLT_1.21.0\jtf407\test\test_debouncer.c:134:test_short_glitch_does_not_trigger_press:PASS
+C:\ST\STM32CubeCLT_1.21.0\jtf407\test\test_debouncer.c:135:test_bouncing_then_settling_low_eventually_presses:PASS
+C:\ST\STM32CubeCLT_1.21.0\jtf407\test\test_debouncer.c:136:test_full_cycle:PASS
+C:\ST\STM32CubeCLT_1.21.0\jtf407\test\test_debouncer.c:137:test_threshold_clamped_to_min_1:PASS
+C:\ST\STM32CubeCLT_1.21.0\jtf407\test\test_debouncer.c:138:test_threshold_clamped_to_max_8:PASS
+C:\ST\STM32CubeCLT_1.21.0\jtf407\test\test_debouncer.c:139:test_null_pointer_safe:PASS
+
+-----------------------
+11 Tests 0 Failures 0 Ignored 
+OK
+<end of output>
+Test time =   0.17 sec
+----------------------------------------------------------
+Test Passed.
+"test_debouncer" end time: May 19 15:59 RTZ 4 (çèìà)
+"test_debouncer" time elapsed: 00:00:00
+----------------------------------------------------------
+
+End testing: May 19 15:59 RTZ 4 (çèìà)

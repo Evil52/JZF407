@@ -53,6 +53,8 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     Core/Src/outputs.c
     Core/Src/state_store.c
     Core/Src/eeprom_at24c02.c
+    Core/Src/debouncer.c
+    Core/Src/buttons.c
 )
 
 # Add include paths

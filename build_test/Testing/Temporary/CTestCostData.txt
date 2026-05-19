@@ -1,3 +1,4 @@
-test_fault_marker 3 0.0074424
-test_led_dispatch 4 0.0303996
+test_fault_marker 4 0.00272882
+test_led_dispatch 5 0.00202142
+test_debouncer 1 0.169519
 ---

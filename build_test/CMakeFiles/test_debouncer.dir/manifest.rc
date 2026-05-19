@@ -1,0 +1,2 @@
+#pragma code_page(65001)
+1 /* CREATEPROCESS_MANIFEST_RESOURCE_ID */ 24 /* RT_MANIFEST */ "C:/ST/STM32CubeCLT_1.21.0/jtf407/build_test/CMakeFiles/test_debouncer.dir/embed.manifest"

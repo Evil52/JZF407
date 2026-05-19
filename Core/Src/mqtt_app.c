@@ -29,6 +29,7 @@
 #include "fault_marker.h"
 #include "led_dispatch.h"
 #include "outputs.h"
+#include "buttons.h"
 #include <string.h>
 #include <stdio.h>
 
@@ -291,6 +292,9 @@ void mqtt_app_task(void *argument)
 
     for (;;) {
         osDelay(100);
+
+        /* --- Button polling (S1 → relay ON, S2 → relay OFF) --- */
+        buttons_poll();
 
         /* --- LED3 visual heartbeat: 100 ms ON every 7 s --- */
         uint32_t now = HAL_GetTick();
