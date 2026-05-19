@@ -77,17 +77,20 @@ STM32_Programmer_CLI --connect port=SWD --write build\jtf407.hex --verify --rst
 | `stm32/diag` | плата → брокер | строка | retained, причина последнего reset |
 | `stm32/led/1` | брокер → плата | `1` или `0` | управление LED1 (PE13) |
 | `stm32/led/2` | брокер → плата | `1` или `0` | управление LED2 (PE14) |
-| `stm32/led/3` | брокер → плата | `1` или `0` | управление LED3 (PE15) |
-| `stm32/led/all` | брокер → плата | `1` или `0` | все три LED одновременно |
-| `stm32/relay/1` | брокер → плата | `1` или `0` | **реле CH1** (PA0, P4 пин 8) |
-| `stm32/relay/2` | брокер → плата | `1` или `0` | **реле CH2** (PC0, P4 пин 7) |
-| `stm32/relay/3` | брокер → плата | `1` или `0` | **реле CH3** (PA3, P4 пин 5) |
-| `stm32/relay/all` | брокер → плата | `1` или `0` | все три реле одновременно |
+| `stm32/led/all` | брокер → плата | `1` или `0` | LED1 + LED2 одновременно |
+| `stm32/relay` | брокер → плата | `1` или `0` | **реле на PD4 (P4 пин 16)** |
 | `stm32/ping` | брокер → плата | любой | плата ответит тем же payload в `stm32/pong` |
 | `stm32/pong` | плата → брокер | эхо payload | используется для измерения RTT |
 | `stm32/heartbeat` | плата → брокер | `1` | каждые 10 сек, поддерживает TCP активным |
 
-**Fail-safe:** при потере MQTT-связи (~22 сек = keep-alive timeout) плата автоматически **выключает все реле и LED**. Подробности в секции [Архитектура](#архитектура).
+**LED3 (PE15)** не управляется через MQTT — используется как **визуальный heartbeat-индикатор**: мигает 100мс каждые 7 сек. Если LED3 мигает — прошивка живая (даже если связи с MQTT нет).
+
+**Persistence (fail-LAST):** состояние LED1/LED2/реле сохраняется в **EEPROM AT24C02** на каждое изменение. После любого reset / power-off — восстанавливается автоматически за ~30мс при старте. При потере MQTT выходы **не выключаются** (фейл-LAST). После reconnect плата ждёт **свежих** команд (retained сообщения от брокера игнорируются 3 сек grace period).
+
+**Кнопки S1 (PE10) и S2 (PE11)** работают **параллельно с MQTT** (даже без сети):
+- **S1** → реле ВКЛ
+- **S2** → реле ВЫКЛ
+- Дебаунс 400мс (4×100мс sliding window) — ложных срабатываний нет
 
 ---
 
@@ -169,10 +172,10 @@ dhcp_start(&gnetif);
 |---|---|---|
 | **PE13** | **LED1** | управляется `stm32/led/1` (active-LOW) |
 | **PE14** | **LED2** | управляется `stm32/led/2` (active-LOW) |
-| **PE15** | **LED3** | управляется `stm32/led/3` (active-LOW) |
-| **PA0** | внешнее **реле CH1** (P4 пин 8) | управляется `stm32/relay/1` (active-LOW) |
-| **PC0** | внешнее **реле CH2** (P4 пин 7) | управляется `stm32/relay/2` (active-LOW) |
-| **PA3** | внешнее **реле CH3** (P4 пин 5) | управляется `stm32/relay/3` (active-LOW) |
+| **PE15** | **LED3** | **heartbeat-индикатор** (100мс / 7сек), не через MQTT |
+| **PE10** | кнопка **S1** | press → реле ВКЛ |
+| **PE11** | кнопка **S2** | press → реле ВЫКЛ |
+| **PD4** | внешнее **реле** (P4 пин 16) | управляется `stm32/relay` (active-LOW) |
 | PE10 | **Кнопка S1** (10K pull-up R17, нажатие = LOW) | не используется |
 | PE11 | **Кнопка S2** (R18) | не используется |
 | PE12 | **Кнопка S3** (R19) | не используется |
@@ -307,23 +310,28 @@ dhcp_start(&gnetif);
 | **P7** | 3-pin для **DS18B20** (термодатчик 1-wire) |
 | **P4, P5** | Header 8×2 — пользовательские GPIO (см. ниже) |
 
-### Подключение реле SONGLE SRD-05VDC (3-канальный модуль)
+### Подключение реле SONGLE SRD-05VDC (1 канал)
 
 ```
 Модуль реле          Куда подключать                      Назначение
 -----------          ----------------------------         ----------------------------
-VCC                  +5V (P1 на плате или USB +5V)        питание оптопары и катушек
+VCC                  +5V (P1 на плате или USB +5V)        питание оптопары и катушки
 GND                  GND                                  земля логики
-RGND                 GND (соединить с GND)                земля катушек (для простоты)
-CH1                  P4 пин 8  → PA0                      управление реле 1
-CH2                  P4 пин 7  → PC0                      управление реле 2
-CH3                  P4 пин 5  → PA3                      управление реле 3
+RGND                 GND (соединить перемычкой)           земля катушки (без изоляции)
+CH (input)           P4 пин 16  → PD4                     управляющий сигнал
 
-Силовые контакты каждого реле:
+Силовые контакты реле:
   COM  — общий
   NO   — нормально разомкнут (замыкается когда реле ВКЛ)
   NC   — нормально замкнут   (размыкается когда реле ВКЛ)
 ```
+
+**Управление реле — тремя способами:**
+1. **MQTT:** `mosquitto_pub -t stm32/relay -m 1` (или `0`)
+2. **Кнопка S1** на плате → реле ВКЛ
+3. **Кнопка S2** на плате → реле ВЫКЛ
+
+Любой способ сохраняет состояние в EEPROM и переживает power-cycle.
 
 **Гальваническая изоляция (опционально, для прода):** снимите перемычку `VCC ↔ JD-VCC` на модуле реле и подайте на JD-VCC отдельное 5V с независимого источника. Тогда катушки реле и оптопары будут электрически развязаны от STM32.
 
@@ -460,11 +468,28 @@ CH3                  P4 пин 5  → PA3                      управлен�
 
 | Сбой | Кто ловит | Реакция |
 |---|---|---|
-| Зависание любой задачи (>20 сек без watchdog refresh) | IWDG | Hardware reset → плата перезагружается |
+| Зависание любой задачи (>20 сек без watchdog refresh) | IWDG | Hardware reset → плата перезагружается → `outputs_restore_from_nvm()` восстанавливает state из EEPROM за ~30мс |
 | `pvPortMalloc` вернул NULL (heap exhausted) | `vApplicationMallocFailedHook` | Записать маркер `0xDEAD2222` в CCMRAM → IWDG reset → опубликовать `stm32/diag = malloc_failed` |
 | Потеря Ethernet link | `ethernet_link_thread` | Stop ETH, ждать link up, restart с новой скоростью/duplex |
-| Потеря MQTT-соединения | `mqtt_app_task` monitor loop | Реконнект через 2 секунды, LWT → брокер опубликует `offline` |
-| Плата вырубилась (питание) | Брокер (LWT) | Через ~90 сек публикует `stm32/status = offline` |
+| Потеря MQTT-соединения | `mqtt_app_task` monitor loop | **Реле и LED НЕ выключаются (fail-LAST)**. Реконнект ~каждые 1 сек. LWT → брокер опубликует `offline`. Кнопки S1/S2 работают весь outage. |
+| Power-off → power-on | EEPROM | State восстанавливается за ~30мс после boot — LED1/LED2/реле возвращаются в последнее состояние без MQTT |
+| Команды MQTT во время outage | (теряются) | clean_session=true → пропущенные команды НЕ воспроизводятся; retained от брокера игнорируются 3 сек после reconnect |
+
+---
+
+## Persistence (сохранение состояния)
+
+Состояние выходов хранится в **AT24C02 EEPROM** (256 байт, I2C через bit-bang PB8/PB9). Это **внешний non-volatile** чип на борту платы — выживает любое отключение питания, даже без VBAT-батарейки.
+
+**Что сохраняется:** один байт — биты LED1/LED2/RELAY (см. [outputs.h](Core/Inc/outputs.h)).
+
+**Когда пишется:** при каждом изменении выхода (через MQTT или кнопку). Если значение не изменилось — записи **не происходит** (защита от износа EEPROM).
+
+**Когда читается:** один раз при старте в `main()`, до запуска RTOS. State применяется к GPIO за ~30мс после reset.
+
+**Износостойкость:** AT24C02 рассчитан на ~10⁶ циклов записи. Если реле переключается раз в час 24/7 — это 100+ лет.
+
+**Магия (защита от мусора):** 4 байта 0xCAFEF00D в начале EEPROM. Если магия не совпадает (чистая EEPROM или повреждённая) — state считается = 0 (всё OFF), магия записывается заново.
 
 ---
 
@@ -537,15 +562,16 @@ cd scripts
 Чистая логика без HAL/RTOS-зависимостей покрыта Unity-тестами в папке [test/](test/).
 
 **Что покрыто:**
-- `fault_marker.c` — 15 тестов на классификацию reset reason
-- `led_dispatch.c` — 16 тестов на MQTT-роутинг команд
+- `fault_marker.c` — 15 тестов: классификация reset reason (RCC_CSR + CCMRAM)
+- `led_dispatch.c` — 17 тестов: MQTT-роутинг команд, LED3 НЕ exposed через MQTT, single `stm32/relay`
+- `debouncer.c` — 11 тестов: edge detection, glitch rejection, threshold limits
 
 **Запуск (на ПК, без платы):**
 ```powershell
 cmd /c '"C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Auxiliary\Build\vcvars64.bat" && cmake -B build_test -S test -G Ninja -DCMAKE_C_COMPILER=cl && cmake --build build_test && ctest --test-dir build_test --output-on-failure'
 ```
 
-Должно быть **31/31 PASS**.
+Должно быть **43/43 PASS** (3 binary'ев).
 
 ---
 
@@ -610,15 +636,25 @@ jtf407/
 │   │   ├── watchdog.h             ← IWDG bare-metal driver
 │   │   ├── fault_marker.h         ← reset reason capture
 │   │   ├── led_dispatch.h         ← чистая логика MQTT-роутинга (тестируемая)
+│   │   ├── outputs.h              ← API управления LED1/LED2/реле + heartbeat LED3
+│   │   ├── state_store.h          ← persistence API (load/save state)
+│   │   ├── eeprom_at24c02.h       ← bit-bang I2C драйвер AT24C02
+│   │   ├── debouncer.h            ← shift-register дебаунсер кнопок (тестируемый)
+│   │   ├── buttons.h              ← onboard S1/S2 → реле
 │   │   ├── FreeRTOSConfig.h
 │   │   └── stm32f4xx_hal_conf.h
 │   └── Src/
-│       ├── main.c                 ← entry point, инициализация задач
-│       ├── mqtt_app.c             ← MQTT клиент + callbacks
+│       ├── main.c                 ← entry point, GPIO init, restore from NVM, RTOS start
+│       ├── mqtt_app.c             ← MQTT клиент + callbacks + monitor loop + LED3 heartbeat
 │       ├── net_ready.c            ← готовность сети (semaphore)
 │       ├── watchdog.c             ← IWDG (запуск + refresh task)
 │       ├── fault_marker.c         ← reset reason из RCC_CSR + CCMRAM
-│       ├── led_dispatch.c         ← парсинг топиков → bitmask LED
+│       ├── led_dispatch.c         ← парсинг MQTT топиков → bitmask
+│       ├── outputs.c              ← применение mask на GPIO, save в NVM
+│       ├── state_store.c          ← state load/save через EEPROM (с RAM-кэшем)
+│       ├── eeprom_at24c02.c       ← bit-bang I2C на PB8/PB9, 50 кГц
+│       ├── debouncer.c            ← edge-detection с shift register
+│       ├── buttons.c              ← polling S1/S2 → outputs_apply
 │       ├── rtos_hooks.c           ← stack overflow / malloc fail hooks
 │       ├── freertos.c
 │       ├── stm32f4xx_it.c         ← IRQ handlers
@@ -652,7 +688,8 @@ jtf407/
 │   ├── unity/                     ← Unity test framework
 │   ├── mocks/                     ← mock STM32 регистров
 │   ├── test_fault_marker.c        ← 15 тестов
-│   └── test_led_dispatch.c        ← 16 тестов
+│   ├── test_led_dispatch.c        ← 17 тестов
+│   └── test_debouncer.c           ← 11 тестов
 │
 └── scripts/
     └── loadtest.ps1               ← 24-часовой нагрузочный тест
