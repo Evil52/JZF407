@@ -51,6 +51,8 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     Core/Src/fault_marker.c
     Core/Src/led_dispatch.c
     Core/Src/outputs.c
+    Core/Src/state_store.c
+    Core/Src/eeprom_at24c02.c
 )
 
 # Add include paths

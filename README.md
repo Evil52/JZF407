@@ -85,6 +85,7 @@ STM32_Programmer_CLI --connect port=SWD --write build\jtf407.hex --verify --rst
 | `stm32/relay/all` | брокер → плата | `1` или `0` | все три реле одновременно |
 | `stm32/ping` | брокер → плата | любой | плата ответит тем же payload в `stm32/pong` |
 | `stm32/pong` | плата → брокер | эхо payload | используется для измерения RTT |
+| `stm32/heartbeat` | плата → брокер | `1` | каждые 10 сек, поддерживает TCP активным |
 
 **Fail-safe:** при потере MQTT-связи (~22 сек = keep-alive timeout) плата автоматически **выключает все реле и LED**. Подробности в секции [Архитектура](#архитектура).
 
@@ -551,6 +552,16 @@ cmd /c '"C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Auxil
 ## Troubleshooting
 
 ### Плата не подключается к брокеру
+
+### Размер лога mosquitto растёт быстро
+
+В `mosquitto.conf` поставь:
+```
+log_type error
+log_type warning
+log_type notice
+```
+вместо `log_type all`. Это убирает PUBLISH события (heartbeat 10/мин = 860 KB/день в логе на `all`). После Restart-Service: с `notice` лог растёт ~10-50 KB/день вместо ~860 KB.
 
 | Симптом | Причина | Решение |
 |---|---|---|

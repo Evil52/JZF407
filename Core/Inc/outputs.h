@@ -7,32 +7,35 @@
 extern "C" {
 #endif
 
-/* Output bitmask values — share between led_dispatch and outputs modules.
+/* MQTT-managed outputs (bit masks shared with led_dispatch):
  *
- *   Bit  Output         Pin     P4 pin    Notes
- *   0x01 LED1           PE13    -         onboard
- *   0x02 LED2           PE14    -         onboard
- *   0x04 LED3           PE15    -         onboard
- *   0x10 RELAY1 (CH1)   PA0     P4 pin 8  external relay module
- *   0x20 RELAY2 (CH2)   PC0     P4 pin 7
- *   0x40 RELAY3 (CH3)   PA3     P4 pin 5
- */
-#define OUT_LED1     0x01u
-#define OUT_LED2     0x02u
-#define OUT_LED3     0x04u
-#define OUT_LED_ALL  0x07u
-#define OUT_RELAY1   0x10u
-#define OUT_RELAY2   0x20u
-#define OUT_RELAY3   0x40u
-#define OUT_RELAY_ALL 0x70u
+ *   Bit   Name      Pin     Where           Notes
+ *   0x01  OUT_LED1  PE13    onboard         green/red LED, active-LOW
+ *   0x02  OUT_LED2  PE14    onboard         active-LOW
+ *   0x04  OUT_RELAY PD4     P4 pin 16       SONGLE relay CH, active-LOW
+ *
+ * PE15 (LED3) is reserved as the heartbeat indicator — driven by mqtt_app
+ * regardless of MQTT, NOT managed by outputs_apply / state_store. */
+#define OUT_LED1    0x01u
+#define OUT_LED2    0x02u
+#define OUT_RELAY   0x04u
+#define OUT_ALL     0x07u
 
 /* Apply state to outputs in mask. Bits not in mask are unchanged.
- * All outputs are active-LOW (HIGH on pin = OFF, LOW = ON / energised). */
+ * Persists the resulting full state to EEPROM. */
 void outputs_apply(uint8_t mask, uint8_t state);
 
-/* Fail-safe: turn EVERY managed output OFF immediately.
- * Idempotent — safe to call repeatedly. */
+/* Restore from EEPROM and drive all outputs to match.
+ * Call ONCE early in boot, after MX_GPIO_Init() and state_store_init(). */
+void outputs_restore_from_nvm(void);
+
+/* Fail-safe: turn every managed output OFF (LED1, LED2, RELAY).
+ * Used by emergency paths only. */
 void outputs_fail_safe(void);
+
+/* --- Heartbeat LED helpers (LED3 / PE15), not part of MQTT state --- */
+void heartbeat_led_on(void);
+void heartbeat_led_off(void);
 
 #ifdef __cplusplus
 }

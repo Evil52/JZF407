@@ -34,6 +34,11 @@
 
 /* Fail-safe configuration */
 #define GRACE_PERIOD_MS  3000U   /* ignore incoming msgs (incl. retained) for 3s after connect */
+#define HEARTBEAT_MS    10000U   /* publish stm32/heartbeat every 10s — keeps TCP alive */
+
+/* LED3 visual heartbeat (independent of MQTT) */
+#define HB_LED_PERIOD_MS  7000U  /* every 7 seconds */
+#define HB_LED_ON_MS       100U  /* LED on for 100 ms */
 
 /* ── user config ─────────────────────────────────────── */
 #define MQTT_BROKER_IP    "192.168.137.1"
@@ -165,17 +170,13 @@ static void on_connection(mqtt_client_t *client, void *arg,
         /* Install publish handlers BEFORE subscribing */
         mqtt_set_inpub_callback(client, on_publish, on_data, NULL);
 
-        /* Subscribe with QoS=0. Total in-flight = 9 subs + 2 publish = 11.
-         * MQTT_REQ_MAX_IN_FLIGHT in lwipopts.h must be >= 11. */
-        mqtt_subscribe(client, "stm32/led/1",     0, on_sub_done, NULL);
-        mqtt_subscribe(client, "stm32/led/2",     0, on_sub_done, NULL);
-        mqtt_subscribe(client, "stm32/led/3",     0, on_sub_done, NULL);
-        mqtt_subscribe(client, "stm32/led/all",   0, on_sub_done, NULL);
-        mqtt_subscribe(client, "stm32/relay/1",   0, on_sub_done, NULL);
-        mqtt_subscribe(client, "stm32/relay/2",   0, on_sub_done, NULL);
-        mqtt_subscribe(client, "stm32/relay/3",   0, on_sub_done, NULL);
-        mqtt_subscribe(client, "stm32/relay/all", 0, on_sub_done, NULL);
-        mqtt_subscribe(client, "stm32/ping",      0, on_sub_done, NULL);  /* load-test echo */
+        /* Subscribe with QoS=0. Total in-flight = 5 subs + 2 publish = 7.
+         * MQTT_REQ_MAX_IN_FLIGHT in lwipopts.h must be >= 7. */
+        mqtt_subscribe(client, "stm32/led/1",   0, on_sub_done, NULL);
+        mqtt_subscribe(client, "stm32/led/2",   0, on_sub_done, NULL);
+        mqtt_subscribe(client, "stm32/led/all", 0, on_sub_done, NULL);
+        mqtt_subscribe(client, "stm32/relay",   0, on_sub_done, NULL);
+        mqtt_subscribe(client, "stm32/ping",    0, on_sub_done, NULL);  /* load-test echo */
 
         /* Publish online status — retained so dashboards see it on (re)subscribe.
          * Combined with LWT "offline", this gives reliable presence tracking. */
@@ -190,11 +191,10 @@ static void on_connection(mqtt_client_t *client, void *arg,
         mqtt_publish(client, "stm32/diag", reason, strlen(reason),
                      0, /*retain=*/1, on_sub_done, NULL);
     } else {
-        /* Connection refused, lost, or keep-alive timed out — fail-safe NOW.
-         * Any relay/lamp/heater must drop OUT immediately so that loss of
-         * supervision cannot leave equipment energised indefinitely. */
+        /* Fail-LAST policy: outputs keep their current state across MQTT
+         * outages. The shadow in outputs.c plus the RTC backup register
+         * are the source of truth, not the broker's retained messages. */
         set_connected(0);
-        outputs_fail_safe();
     }
 }
 
@@ -215,10 +215,10 @@ static void do_connect(void *arg)
 
     memset(&s_ci, 0, sizeof(s_ci));
     s_ci.client_id   = MQTT_CLIENT_ID;
-    /* keep_alive=15s: broker declares us dead in ~22s of silence (1.5× keep-alive).
-     * Combined with fail-safe in on_connection, relays drop within 25-30s of any
-     * network outage. Lower than 15s would burn unnecessary battery on PINGREQs. */
-    s_ci.keep_alive  = 15;
+    /* keep_alive=120s: long timeout, our 10s heartbeat keeps TCP active
+     * regardless of lwIP MQTT PINGREQ behaviour. Brokers see PUBLISH every
+     * 10s → no idle disconnect. */
+    s_ci.keep_alive  = 120;
     /* Last Will: broker publishes "offline" if we vanish without DISCONNECT.
      * Retained so any new subscriber sees the current state immediately. */
     s_ci.will_topic  = "stm32/status";
@@ -246,6 +246,18 @@ static uint8_t mqtt_is_connected_safe(void)
     return r;
 }
 
+/* Heartbeat: runs on tcpip thread via tcpip_callback (the only safe way
+ * to call lwIP API from another FreeRTOS task without LWIP_TCPIP_CORE_LOCKING). */
+static void do_heartbeat(void *arg)
+{
+    (void)arg;
+    if (!s_client) return;
+    if (mqtt_client_is_connected(s_client)) {
+        mqtt_publish(s_client, "stm32/heartbeat", "1", 1,
+                     0, 0, on_sub_done, NULL);
+    }
+}
+
 /* ── FreeRTOS task ───────────────────────────────────── */
 void mqtt_app_task(void *argument)
 {
@@ -271,25 +283,40 @@ void mqtt_app_task(void *argument)
         set_connecting(0);
     }
 
-    /* Monitor connection — reconnect only if truly disconnected AND
-     * no connect is currently in flight. */
-    for (;;) {
-        osDelay(2000);
+    /* Monitor connection + heartbeat publish + heartbeat LED.
+     * Tick at 100 ms — fine enough for crisp 100 ms LED pulse, low CPU cost. */
+    uint32_t last_mqtt_hb_ms = HAL_GetTick();
+    uint32_t last_led_hb_ms  = HAL_GetTick();
+    uint8_t  led_on          = 0;
 
-        /* Safety net: if we are not connected and not currently connecting,
-         * force outputs OFF every tick. on_connection(non-ACCEPTED) does it
-         * once, but if the disconnect callback was missed (e.g. tcpip mbox
-         * full), this idempotent call closes the gap. */
-        if (!get_connected() && !get_connecting()) {
-            outputs_fail_safe();
+    for (;;) {
+        osDelay(100);
+
+        /* --- LED3 visual heartbeat: 100 ms ON every 7 s --- */
+        uint32_t now = HAL_GetTick();
+        if (!led_on && (now - last_led_hb_ms) >= HB_LED_PERIOD_MS) {
+            heartbeat_led_on();
+            led_on = 1;
+            last_led_hb_ms = now;
+        } else if (led_on && (now - last_led_hb_ms) >= HB_LED_ON_MS) {
+            heartbeat_led_off();
+            led_on = 0;
+            /* keep last_led_hb_ms as the ON timestamp; the next pulse will fire
+             * HB_LED_PERIOD_MS later from start-of-ON (period, not gap). */
         }
 
-        if (get_connecting()) continue;                         /* wait for callback */
+        /* --- MQTT heartbeat publish --- */
+        if (get_connected() &&
+            (now - last_mqtt_hb_ms) >= HEARTBEAT_MS) {
+            tcpip_callback(do_heartbeat, NULL);
+            last_mqtt_hb_ms = now;
+        }
+
+        if (get_connecting()) continue;
         if (mqtt_is_connected_safe() || get_connected()) continue;
 
         set_connecting(1);
         if (tcpip_callback(do_connect, NULL) != ERR_OK) {
-            /* tcpip mbox full — clear flag, retry next tick */
             set_connecting(0);
         }
     }

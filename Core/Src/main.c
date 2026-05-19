@@ -27,6 +27,8 @@
 #include "net_ready.h"
 #include "watchdog.h"
 #include "fault_marker.h"
+#include "outputs.h"
+#include "state_store.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -112,7 +114,11 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   /* USER CODE BEGIN 2 */
-
+  /* Restore output state from RTC backup registers. Done BEFORE RTOS start
+   * so any user-visible outputs (LEDs, relays) come up in the last known
+   * state within milliseconds of reset, not seconds. */
+  state_store_init();
+  outputs_restore_from_nvm();
   /* USER CODE END 2 */
 
   /* Init scheduler */
@@ -244,24 +250,18 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
 
   /* USER CODE BEGIN MX_GPIO_Init_2 */
-  /* External relay channels on P4 connector (SONGLE SRD-05VDC, active-LOW).
-   *   Relay CH1 → PA0 (P4 pin 8)
-   *   Relay CH2 → PC0 (P4 pin 7)
-   *   Relay CH3 → PA3 (P4 pin 5)
-   * IMPORTANT: set output HIGH *before* configuring as push-pull, so the
-   * pin is never driven LOW during init (which would briefly energise the
-   * relay coil at power-on). */
-  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_0|GPIO_PIN_3, GPIO_PIN_SET);
-  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_0,            GPIO_PIN_SET);
+  /* External relay on P4 connector (SONGLE SRD-05VDC, active-LOW):
+   *   Relay → PD4 (P4 pin 16)
+   * Drive HIGH BEFORE configuring as push-pull so the relay coil is not
+   * briefly energised at power-on. */
+  __HAL_RCC_GPIOD_CLK_ENABLE();
+  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_4, GPIO_PIN_SET);
 
-  GPIO_InitStruct.Pin   = GPIO_PIN_0|GPIO_PIN_3;
+  GPIO_InitStruct.Pin   = GPIO_PIN_4;
   GPIO_InitStruct.Mode  = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull  = GPIO_PULLUP;    /* extra safety: pulled high before init */
+  GPIO_InitStruct.Pull  = GPIO_PULLUP;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
-
-  GPIO_InitStruct.Pin   = GPIO_PIN_0;
-  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+  HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
   /* USER CODE END MX_GPIO_Init_2 */
 }
 
