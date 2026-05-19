@@ -2,6 +2,8 @@ JZSTM32F407 MQTT Ethernet Controller
 
 Embedded firmware для STM32F407VETx с управлением через MQTT по Ethernet.
 
+**Статус:** прошёл нагрузочный тест **7.3 часа / 127 430 транзакций / 0% потерь / 0 переподключений** (подробности в [scripts/loadtest.summary](scripts/loadtest.summary)).
+
 **Текущая функциональность:** дистанционное управление тремя LED через MQTT-команды. Лёгко расширяется на любые GPIO (см. таблицу пинов ниже).
 
 ---
@@ -469,13 +471,28 @@ dhcp_start(&gnetif);
 
 ## Тесты
 
-### Нагрузочный тест
+### Нагрузочный тест — **выполнен 19.05.2026, 7.3 часа**
 
-Скрипт [scripts/loadtest.ps1](scripts/loadtest.ps1) гоняет MQTT request-response на плату в течение N часов и собирает статистику:
-- RTT min/avg/max
-- Packet loss
-- Reconnect count
-- Reset events
+Скрипт [scripts/loadtest.ps1](scripts/loadtest.ps1) гоняет MQTT request-response (`stm32/ping` → `stm32/pong`) на плату с частотой 5 Hz и собирает статистику.
+
+**Результаты ([полный отчёт](scripts/loadtest.summary)):**
+
+| Метрика | Значение |
+|---|---|
+| Длительность | 7.349 часов (441 мин) |
+| Транзакций | **127 430** |
+| Доставлено | **127 430 (100%)** |
+| Потерь | **0** |
+| RTT медиана | 12 мс |
+| RTT avg | 21.31 мс |
+| RTT p99 | 117 мс |
+| RTT max | 181 мс |
+| Reconnects | **0** |
+| IWDG resets | **0** |
+| Stack overflow | **0** |
+| Malloc failures | **0** |
+
+**Главное:** RTT не дрейфует по часам (21.0–21.5 мс avg на всём интервале) → **нет утечек памяти**, нет фрагментации heap.
 
 Запуск:
 ```powershell

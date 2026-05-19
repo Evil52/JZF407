@@ -34,9 +34,8 @@ function(add_jtf407_test name source)
     add_test(NAME ${name} COMMAND ${name})
 endfunction()
 
-# fault_marker: redirect MARKER_ADDR to fake CCMRAM buffer
+# fault_marker: MARKER_ADDR redirected to mock_ccmram via TEST_BUILD guard
 add_jtf407_test(test_fault_marker test_fault_marker.c ../Core/Src/fault_marker.c)
-target_compile_definitions(test_fault_marker PRIVATE FAULT_MARKER_ADDR=(uintptr_t)mock_ccmram)
 
 # led_dispatch is pure C, no hardware deps
 add_jtf407_test(test_led_dispatch test_led_dispatch.c ../Core/Src/led_dispatch.c)

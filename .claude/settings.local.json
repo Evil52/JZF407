@@ -22,7 +22,8 @@
       "PowerShell(& \"C:\\\\Program Files\\\\mosquitto\\\\mosquitto_pub.exe\" -h 192.168.137.1 -t stm32/led/all -m 0)",
       "PowerShell(& \"C:\\\\Program Files\\\\mosquitto\\\\mosquitto_pub.exe\" -h 192.168.137.1 -t stm32/led/1 -m 1)",
       "PowerShell(& \"C:\\\\Program Files\\\\mosquitto\\\\mosquitto_pub.exe\" -h 192.168.137.1 -t stm32/led/2 -m 1)",
-      "PowerShell(& \"C:\\\\Program Files\\\\mosquitto\\\\mosquitto_sub.exe\" -h 192.168.137.1 -t \"stm32/status\" -t \"stm32/diag\" -v -W 5 2>&1)"
+      "PowerShell(& \"C:\\\\Program Files\\\\mosquitto\\\\mosquitto_sub.exe\" -h 192.168.137.1 -t \"stm32/status\" -t \"stm32/diag\" -v -W 5 2>&1)",
+      "Bash(cmd /c '\"C:\\\\Program Files \\(x86\\)\\\\Microsoft Visual Studio\\\\2022\\\\BuildTools\\\\VC\\\\Auxiliary\\\\Build\\\\vcvars64.bat\" >nul 2>&1 && cmake -B build_test -S test -G Ninja -DCMAKE_C_COMPILER=cl 2>&1 && cmake --build build_test 2>&1 && ctest --test-dir build_test --output-on-failure 2>&1')"
     ]
   }
 }

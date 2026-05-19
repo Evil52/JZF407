@@ -28,8 +28,12 @@
 #include "net_ready.h"
 #include "fault_marker.h"
 #include "led_dispatch.h"
+#include "outputs.h"
 #include <string.h>
 #include <stdio.h>
+
+/* Fail-safe configuration */
+#define GRACE_PERIOD_MS  3000U   /* ignore incoming msgs (incl. retained) for 3s after connect */
 
 /* ── user config ─────────────────────────────────────── */
 #define MQTT_BROKER_IP    "192.168.137.1"
@@ -90,6 +94,18 @@ static void led_all(uint8_t on)
 /* Forward decl */
 static void on_sub_done(void *arg, err_t err);
 
+/* Grace period: after a fresh connect, ignore the first GRACE_PERIOD_MS of
+ * incoming messages. Brokers replay retained messages immediately after
+ * SUBSCRIBE — without this filter, the device would re-apply the last known
+ * "ON" command from days ago and re-energise relays right after a power dip. */
+static volatile uint32_t s_grace_until_ms = 0;
+
+static inline uint8_t in_grace_period(void)
+{
+    int32_t remaining = (int32_t)(s_grace_until_ms - HAL_GetTick());
+    return (remaining > 0) ? 1 : 0;
+}
+
 /* ── incoming publish (called from tcpip thread) ─────── */
 static char s_topic_buf[64];
 
@@ -106,6 +122,7 @@ static void on_data(void *arg, const u8_t *data, u16_t len, u8_t flags)
 
     led_dispatch_t d = led_dispatch_parse(s_topic_buf, data, len);
 
+    /* Echo always honoured — used for load-test RTT measurement, no side effect */
     if (d.echo) {
         if (s_client) {
             mqtt_publish(s_client, "stm32/pong", data, len,
@@ -114,9 +131,13 @@ static void on_data(void *arg, const u8_t *data, u16_t len, u8_t flags)
         return;
     }
 
-    if (d.mask & 0x01) led_set(LED1_PIN, d.state);
-    if (d.mask & 0x02) led_set(LED2_PIN, d.state);
-    if (d.mask & 0x04) led_set(LED3_PIN, d.state);
+    /* During grace period, drop output commands. This prevents retained
+     * "ON" messages from auto-energising relays right after a reconnect. */
+    if (in_grace_period()) {
+        return;
+    }
+
+    if (d.mask) outputs_apply(d.mask, d.state);
 }
 
 static void on_sub_done(void *arg, err_t err)
@@ -133,6 +154,13 @@ static void on_connection(mqtt_client_t *client, void *arg,
 
     if (status == MQTT_CONNECT_ACCEPTED) {
         set_connected(1);
+
+        /* Start grace period — any retained command arriving in the next
+         * GRACE_PERIOD_MS is dropped by on_data(). Brokers replay retained
+         * messages immediately after SUBSCRIBE; this protects against an
+         * old "ON" command re-energising relays after a power dip / reconnect. */
+        s_grace_until_ms = HAL_GetTick() + GRACE_PERIOD_MS;
+        __DMB();
 
         /* Install publish handlers BEFORE subscribing */
         mqtt_set_inpub_callback(client, on_publish, on_data, NULL);
@@ -157,7 +185,11 @@ static void on_connection(mqtt_client_t *client, void *arg,
         mqtt_publish(client, "stm32/diag", reason, strlen(reason),
                      0, /*retain=*/1, on_sub_done, NULL);
     } else {
+        /* Connection refused, lost, or keep-alive timed out — fail-safe NOW.
+         * Any relay/lamp/heater must drop OUT immediately so that loss of
+         * supervision cannot leave equipment energised indefinitely. */
         set_connected(0);
+        outputs_fail_safe();
     }
 }
 
@@ -178,7 +210,10 @@ static void do_connect(void *arg)
 
     memset(&s_ci, 0, sizeof(s_ci));
     s_ci.client_id   = MQTT_CLIENT_ID;
-    s_ci.keep_alive  = 60;
+    /* keep_alive=15s: broker declares us dead in ~22s of silence (1.5× keep-alive).
+     * Combined with fail-safe in on_connection, relays drop within 25-30s of any
+     * network outage. Lower than 15s would burn unnecessary battery on PINGREQs. */
+    s_ci.keep_alive  = 15;
     /* Last Will: broker publishes "offline" if we vanish without DISCONNECT.
      * Retained so any new subscriber sees the current state immediately. */
     s_ci.will_topic  = "stm32/status";
@@ -235,6 +270,15 @@ void mqtt_app_task(void *argument)
      * no connect is currently in flight. */
     for (;;) {
         osDelay(2000);
+
+        /* Safety net: if we are not connected and not currently connecting,
+         * force outputs OFF every tick. on_connection(non-ACCEPTED) does it
+         * once, but if the disconnect callback was missed (e.g. tcpip mbox
+         * full), this idempotent call closes the gap. */
+        if (!get_connected() && !get_connecting()) {
+            outputs_fail_safe();
+        }
+
         if (get_connecting()) continue;                         /* wait for callback */
         if (mqtt_is_connected_safe() || get_connected()) continue;
 

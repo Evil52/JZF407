@@ -49,6 +49,8 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     Core/Src/rtos_hooks.c
     Core/Src/watchdog.c
     Core/Src/fault_marker.c
+    Core/Src/led_dispatch.c
+    Core/Src/outputs.c
 )
 
 # Add include paths

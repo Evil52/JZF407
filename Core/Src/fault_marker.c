@@ -16,11 +16,12 @@
 #include "fault_marker.h"
 #include "stm32f4xx.h"
 
-/* Test override: tests redirect MARKER_ADDR to a fake buffer */
-#ifndef FAULT_MARKER_ADDR
-#define FAULT_MARKER_ADDR  0x1000FFF0u
+#ifdef TEST_BUILD
+extern uint32_t mock_ccmram[8];
+#define MARKER_ADDR  ((volatile uint32_t *)mock_ccmram)
+#else
+#define MARKER_ADDR  ((volatile uint32_t *)0x1000FFF0u)
 #endif
-#define MARKER_ADDR        ((volatile uint32_t *)(uintptr_t)FAULT_MARKER_ADDR)
 #define MAGIC_STACK        0xDEAD1111u
 #define MAGIC_MALLOC       0xDEAD2222u
 #define MAGIC_SENTINEL     0xA5A5A5A5u
@@ -57,7 +58,10 @@ void fault_marker_capture(void)
     if (sentinel == MAGIC_SENTINEL) {
         if (magic == MAGIC_STACK) {
             s_info.reason        = RESET_REASON_STACK_OVF;
-            s_info.task_name     = (const char *)name_ptr;
+            /* On STM32 (ILP32) pointers are 32-bit, this round-trips fine.
+             * On the host (x64 / LP64) the upper 32 bits are lost — tests
+             * deliberately don't try to round-trip a pointer here. */
+            s_info.task_name     = (const char *)(uintptr_t)name_ptr;
             s_info.tick_at_fault = tick;
         } else if (magic == MAGIC_MALLOC) {
             s_info.reason        = RESET_REASON_MALLOC_FAIL;
