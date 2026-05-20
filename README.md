@@ -1,3 +1,6 @@
+<img width="1280" height="964" alt="5220009269544033595" src="https://github.com/user-attachments/assets/2c705cfe-dc4f-4896-929f-6660344eaa00" />
+
+
 JZSTM32F407 MQTT Ethernet Controller
 
 Embedded firmware для STM32F407VETx с управлением через MQTT по Ethernet.
